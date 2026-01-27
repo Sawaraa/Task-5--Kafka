@@ -29,11 +29,24 @@ docker-compose up --build
 ```
 ### 3. Запуск для розробки
 Якщо запускати код в IDE то:
-щоб звільнити порт 8081
 ```bash
 docker stop email-service
 ```
 щоб звільнити порт 8081, і запустити локально 
+
+## 🔍 Налаштування перегляду даних у Kibana
+
+Після того, як сервіс відправить або збереже перший лист в Elasticsearch, виконайте ці кроки, щоб побачити дані в Kibana:
+
+1. Відкрийте **Kibana** за адресою: `http://localhost:5601`.
+2. Перейдіть у меню: **Management** -> **Stack Management**.
+3. Оберіть розділ **Data Views**.
+4. Натисніть **Create data view**.
+5. У полі **Name** вкажіть: `email-messages*`.
+6. Оберіть поле для фільтрації за часом.
+7. Натисніть **Save data view to Kibana**.
+
+Тепер ви можете перейти в розділ **Analytics** -> **Discover**, щоб переглядати ваші листи в реальному часі.
 
 ## 📊 Доступ до сервісів
 
@@ -41,7 +54,7 @@ docker stop email-service
 
 | Сервіс | Адреса | Опис |
 | :--- | :--- | :--- |
-| **Email Service** | `http://localhost:8081` | Ваш Spring Boot додаток (REST API та Kafka Consumer) |
+| **Email Service** | `http://localhost:8081` | Spring Boot додаток (REST API та Kafka Consumer) |
 | **Elasticsearch** | `http://localhost:9200` | База даних для зберігання історії надісланих листів |
 | **Kibana** | `http://localhost:5601` | Візуальний інтерфейс для керування та аналізу даних Elastic |
 | **Zookeeper** | `http://localhost:2181` | Координатор для стабільної роботи кластера Kafka |
