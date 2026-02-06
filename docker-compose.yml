@@ -16,7 +16,6 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Налаштовуємо два канали: PLAINTEXT для Docker, LOCALHOST для твоєї IDE
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,LOCALHOST://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,LOCALHOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,LOCALHOST:PLAINTEXT
@@ -24,6 +23,21 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
       - zookeeper
+
+  db-books:
+    image: postgres:15-alpine
+    container_name: postgres-db-books
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: library_db
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d library_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
@@ -39,6 +53,41 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  gateway:
+    build:
+      context: ../Task-5--Gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - books-service
+
+  books-service:
+    build:
+      context: ../Task-2--Spring
+    container_name: books-service
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-books:5432/library_db
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+    depends_on:
+      db-books:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    restart: on-failure
+
+  frontend:
+    build:
+      context: ../Task-3--React
+    container_name: react-frontend
+    ports:
+      - "3050:80"
+    depends_on:
+      - gateway
+    restart: always
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
@@ -64,6 +113,8 @@ services:
     env_file:
       - .env
     environment:
-      # ВАЖЛИВО: всередині Docker звертаємось до порту 29092
       - KAFKA_SERVERS=kafka:29092
       - ELASTIC_ADDR=elasticsearch:9200
+
+volumes:
+  postgres_data:
